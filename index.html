@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cris Prado | Hot Dog Premium</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Pacifico&family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        h1 { font-family: 'Bangers', cursive; }
+        .slogan { font-family: 'Pacifico', cursive; }
+        body { font-family: 'Roboto', sans-serif; background-color: #f9fafb; background-image: url("https://www.transparenttextures.com/patterns/food.png"); background-attachment: fixed; }
+        .sidebar { transition: 0.4s; transform: translateX(100%); }
+        .sidebar.open { transform: translateX(0); }
+        .product-img { width: 70px; height: 70px; object-fit: contain; }
+    </style>
+</head>
+<body class="pb-32">
+
+    <div id="sidebar" class="sidebar fixed inset-y-0 right-0 w-80 bg-white shadow-2xl z-[100] flex flex-col">
+        <div class="p-6 bg-red-600 text-white flex justify-between items-center">
+            <h2 class="font-black italic">MEUS PEDIDOS</h2>
+            <button onclick="toggleSidebar()" class="text-xl">✕</button>
+        </div>
+        <div class="p-4 flex-1 overflow-y-auto">
+            <input type="number" id="track-phone" placeholder="Digite seu WhatsApp" class="w-full p-4 border-2 rounded-2xl mb-4 font-bold outline-none focus:border-red-500">
+            <button onclick="buscarStatus()" class="w-full bg-red-600 text-white py-4 rounded-2xl font-black text-xs uppercase mb-6">Consultar</button>
+            <div id="pedidos-lista" class="space-y-4"></div>
+        </div>
+    </div>
+    <div id="overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-[90] hidden backdrop-blur-sm"></div>
+
+    <header class="bg-red-600 text-white p-10 text-center shadow-xl border-b-4 border-yellow-400 relative">
+        <button onclick="toggleSidebar()" class="absolute right-6 top-1/2 -translate-y-1/2 bg-white/20 p-2 rounded-xl text-xs font-bold uppercase">Status</button>
+        <h1 class="text-6xl italic text-yellow-100 drop-shadow-lg">Cris Prado</h1>
+        <p class="slogan text-2xl text-yellow-200">O melhor hot dog da região!</p>
+    </header>
+
+    <main class="max-w-md mx-auto p-4 space-y-10">
+        <section>
+            <h2 class="text-2xl font-black mb-6 text-red-700 border-b-4 border-red-100 pb-2">🌭 Hot Dogs</h2>
+            <div id="lista-dogs" class="space-y-4"></div>
+        </section>
+        <section>
+            <h2 class="text-2xl font-black mb-6 text-blue-700 border-b-4 border-blue-100 pb-2">🥤 Bebidas</h2>
+            <div id="lista-bebidas" class="space-y-4"></div>
+        </section>
+    </main>
+
+    <div class="fixed bottom-0 left-0 right-0 bg-white p-6 flex justify-between items-center shadow-2xl z-50 rounded-t-[32px]">
+        <div><p class="text-[10px] font-black text-gray-400 uppercase">Total</p><span class="text-3xl font-black text-red-600">R$ <span id="total-price">0,00</span></span></div>
+        <button onclick="toggleCartModal()" class="bg-red-600 text-white px-8 py-4 rounded-2xl font-black text-lg uppercase shadow-lg">Finalizar</button>
+    </div>
+
+    <div id="modal-mayo" class="fixed inset-0 bg-black/80 hidden flex items-center justify-center z-[120] p-4">
+        <div class="bg-white w-full max-w-sm p-8 rounded-[40px] text-center">
+            <h3 class="text-2xl font-black text-red-600 mb-6 italic">Escolha a Maionese</h3>
+            <select id="mayo-select" class="w-full p-4 border-2 rounded-2xl font-bold mb-8 outline-none">
+                <option value="Maionese Verde">Maionese Verde (Casa)</option>
+                <option value="Maionese de Bacon">Maionese de Bacon</option>
+                <option value="Cebola Caramelizada">Cebola Caramelizada</option>
+                <option value="Sem Maionese">Sem Maionese</option>
+            </select>
+            <button onclick="confirmLanche()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-black">ADICIONAR ✅</button>
+        </div>
+    </div>
+
+    <div id="cart-modal" class="fixed inset-0 bg-black/80 hidden flex items-center justify-center z-[110] p-4">
+        <div class="bg-white w-full max-w-md p-6 rounded-[35px] max-h-[90vh] overflow-y-auto">
+            <h2 class="text-2xl font-black mb-6 uppercase">Finalizar Pedido</h2>
+            <div id="cart-items" class="space-y-3 mb-6"></div>
+            <div class="grid grid-cols-2 gap-4 mb-4 font-black text-[10px] uppercase">
+                <button onclick="setMetodo('entrega')" id="btn-entrega" class="p-3 rounded-xl border-2 border-red-600 text-red-600">Entregar</button>
+                <button onclick="setMetodo('retirada')" id="btn-retirada" class="p-3 rounded-xl border-2 border-gray-100 text-gray-400">Retirar</button>
+            </div>
+            <input type="text" id="client-name" placeholder="Nome" class="w-full p-4 border rounded-xl mb-3 font-bold">
+            <input type="number" id="client-phone" placeholder="WhatsApp" class="w-full p-4 border rounded-xl mb-3 font-bold">
+            <input type="text" id="address" placeholder="Endereço (Rua, Nº, Bairro)" class="w-full p-4 border rounded-xl mb-3 font-bold">
+            <select id="payment" class="w-full p-4 border rounded-xl mb-6 font-bold">
+                <option value="Pix">Pix (17992110457)</option>
+                <option value="Cartão">Cartão (Maquininha)</option>
+                <option value="Dinheiro">Dinheiro</option>
+            </select>
+            <button onclick="finalizarPedido()" class="w-full bg-green-500 text-white py-4 rounded-xl font-black text-xl shadow-xl">ENVIAR PEDIDO 🚀</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, query, where, onSnapshot, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCFqUjWp4fBd_wl75uMmaGjRfJDS85FLe4",
+            authDomain: "cris-prado.firebaseapp.com",
+            projectId: "cris-prado",
+            storageBucket: "cris-prado.firebasestorage.app",
+            messagingSenderId: "316187175890",
+            appId: "1:316187175890:web:72288256711dfad37fb60b"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const hotDogs = [{ n: "Carne", p: 14.90 }, { n: "Frango", p: 14.90 }, { n: "Misto", p: 14.90 }];
+        const bebidas = [
+            { n: "Coca-Cola 2L", p: 15.0, img: "https://images.tcdn.com.br/img/img_prod/1082210/coca_coca_2l_pack_8_1_1_2380938e61e93125191ebc11919fc1d7.png" },
+            { n: "Roller 2L", p: 10.0, img: "https://www.bebidaspoty.com.br/wp-content/uploads/2021/07/img-roller-2l.png" },
+            { n: "Cotuba 2L", p: 12.0, img: "https://ibassets.com.br/ib.item.image.large/l-bc173557e53f47e3848130883d69287d.jpeg" },
+            { n: "Coca lata 350ml", p: 6.0, img: "https://images.tcdn.com.br/img/img_prod/1082210/refrigerante_coca_cola_350_ml_cx_153_1_69e0d310d5c2eee2f2d02c687ce191b0.png" },
+            { n: "Coca 600ml", p: 8.0, img: "https://images.tcdn.com.br/img/img_prod/1082210/refrigerante_coca_cola_600_ml_cx_237_1_a6460d428f2f32c9e828220a8f4c3c83.png" },
+            { n: "Cotuba 600ml", p: 7.0, img: "https://ibassets.com.br/ib.item.image.large/l-4bb20c3b544647bb89de2b7ac8a29290.jpeg" },
+            { n: "Suco 500ml", p: 10.0, img: "https://app.cardapiodigital.net/tabuadecarne/1307-large_default/suco-laranja-500ml.jpg" },
+            { n: "Água com gás 500ml", p: 5.0, img: "https://andinacocacola.vtexassets.com/arquivos/ids/157851/113326_COCA---Crystal500ml-ComGas.jpg?v=638412001213470000" },
+            { n: "Água sem gás 500ml", p: 4.0, img: "https://www.imigrantesbebidas.com.br/bebida/images/products/full/2893-agua-mineral-crystal-sem-gas-500ml.jpg" }
+        ];
+
+        window.cart = [];
+        window.total = 0;
+        window.metodo = 'entrega';
+        let tempItem = null;
+
+        window.onload = () => { renderMenu(); };
+
+        function renderMenu() {
+            document.getElementById('lista-dogs').innerHTML = hotDogs.map(d => `<div class="bg-white p-5 rounded-[30px] shadow-sm flex justify-between items-center border border-gray-50"><div class="flex-1"><h3 class="font-black text-xl">${d.n}</h3><p class="text-green-600 font-black">R$ ${d.p.toFixed(2)}</p></div><button onclick="openCustomization('${d.n}', ${d.p})" class="w-12 h-12 bg-red-600 text-white rounded-2xl font-black text-2xl">+</button></div>`).join('');
+            document.getElementById('lista-bebidas').innerHTML = bebidas.map(b => `<div class="bg-white p-4 rounded-[30px] shadow-sm flex justify-between items-center border border-gray-50"><div class="flex-1"><h3 class="font-black text-lg">${b.n}</h3><p class="text-green-600 font-black">R$ ${b.p.toFixed(2)}</p><button onclick="addToCart('${b.n}', ${b.p})" class="mt-2 bg-blue-600 text-white px-4 py-1 rounded-xl text-xs font-bold uppercase">Pedir</button></div><img src="${b.img}" class="product-img" onerror="this.src='https://placehold.co/100x100?text=Bebida'"></div>`).join('');
+        }
+
+        window.toggleSidebar = () => { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('overlay').classList.toggle('hidden'); };
+        window.setMetodo = (m) => { window.metodo = m; document.getElementById('address').style.display = m === 'entrega' ? 'block' : 'none'; };
+        window.openCustomization = (name, price) => { tempItem = { name, price }; document.getElementById('modal-mayo').classList.remove('hidden'); };
+        window.confirmLanche = () => { const mayo = document.getElementById('mayo-select').value; addToCart(`${tempItem.name} (${mayo})`, tempItem.price); document.getElementById('modal-mayo').classList.add('hidden'); };
+        window.addToCart = (name, price) => { window.cart.push({name, price}); window.total += price; document.getElementById('total-price').innerText = window.total.toFixed(2).replace('.', ','); };
+        window.toggleCartModal = () => { document.getElementById('cart-items').innerHTML = window.cart.map(i => `<div class="flex justify-between font-bold text-sm"><span>${i.name}</span><span>R$ ${i.price.toFixed(2)}</span></div>`).join(''); document.getElementById('cart-modal').classList.toggle('hidden'); };
+
+        window.finalizarPedido = async () => {
+            const nome = document.getElementById('client-name').value;
+            const tel = document.getElementById('client-phone').value;
+            const end = document.getElementById('address').value;
+            if(!nome || !tel || window.cart.length === 0) return alert("Preencha os campos!");
+            const totalF = window.metodo === 'entrega' ? window.total + 2 : window.total;
+            await addDoc(collection(db, "pedidos"), { cliente: nome, telefone: tel, endereco: window.metodo === 'entrega' ? end : 'Retirada', itens: window.cart, total: totalF, metodo: window.metodo, pagamento: document.getElementById('payment').value, status: "Pendente", data: serverTimestamp() });
+            alert("Pedido Enviado!"); location.reload();
+        };
+
+        window.buscarStatus = () => {
+            const tel = document.getElementById('track-phone').value;
+            const res = document.getElementById('pedidos-lista');
+            onSnapshot(query(collection(db, "pedidos"), where("telefone", "==", tel), orderBy("data", "desc")), (snap) => {
+                res.innerHTML = "";
+                snap.forEach(docSnap => {
+                    const p = docSnap.data();
+                    const s = p.status.toLowerCase();
+                    let cor = "bg-yellow-100 text-yellow-600";
+                    let label = p.status;
+                    if(s === 'saiu para entrega') { cor = "bg-orange-600 text-white font-black"; label = "🛵 SAIU P/ ENTREGA!"; }
+                    if(s === 'pronto para retirada') { cor = "bg-purple-600 text-white font-black"; label = "🛍️ PODE BUSCAR!"; }
+                    if(s === 'concluido') { cor = "bg-green-100 text-green-600"; label = "Entregue ✅"; }
+                    res.innerHTML += `<div class="bg-gray-50 p-4 rounded-2xl border-2"><span class="px-2 py-1 rounded-lg text-[10px] font-black uppercase ${cor}">${label}</span><p class="font-black text-sm mt-2">${p.itens.map(i => i.name).join(', ')}</p></div>`;
+                });
+            });
+        };
+    </script>
+</body>
+</html>
